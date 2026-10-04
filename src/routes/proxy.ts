@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import * as proxyService from '../services/proxy';
+import { withVpnStatus } from '../services/proxy-vpn-status';
 
 const router = Router();
 
@@ -7,7 +8,7 @@ const router = Router();
 router.get('/', async (_req: Request, res: Response) => {
   try {
     const proxies = await proxyService.listProxies();
-    res.json(proxies);
+    res.json(await Promise.all(proxies.map(withVpnStatus)));
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -31,7 +32,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       res.status(404).json({ error: 'Proxy not found' });
       return;
     }
-    res.json(proxy);
+    res.json(await withVpnStatus(proxy));
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -115,7 +116,7 @@ router.get('/:id/stats', async (req: Request, res: Response) => {
       res.status(404).json({ error: 'Proxy not found' });
       return;
     }
-    res.json(stats);
+    res.json(await withVpnStatus(stats));
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

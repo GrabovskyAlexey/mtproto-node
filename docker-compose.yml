@@ -5,7 +5,7 @@ services:
     build:
       context: .
       provenance: false
-    image: ghcr.io/danielvnru/mtproto-node:latest
+    image: ghcr.io/grabovskyalexey/mtproto-node:latest
     container_name: mtproto-service-node
     restart: unless-stopped
     logging:

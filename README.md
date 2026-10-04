@@ -1,6 +1,6 @@
 # MTProto Service Node
 
-Сервис-нода для управления MTProto прокси контейнерами. Устанавливается на каждый прокси-сервер и управляется через [MTProto Panel](https://github.com/danielVNru/mtproto-panel).
+Сервис-нода для управления MTProto прокси контейнерами. Устанавливается на каждый прокси-сервер и управляется через [MTProto Panel](https://github.com/GrabovskyAlexey/mtproto-panel).
 
 ## Совместимость
 
@@ -123,7 +123,7 @@ curl -X POST http://NODE_IP:8443/api/proxies \
 Одна команда для загрузки и запуска:
 
 ```bash
-wget -qO /tmp/node-install.sh https://raw.githubusercontent.com/danielVNru/mtproto-node/master/install.sh && sudo bash /tmp/node-install.sh
+wget -qO /tmp/node-install.sh https://raw.githubusercontent.com/GrabovskyAlexey/mtproto-node/master/install.sh && sudo bash /tmp/node-install.sh
 ```
 
 Скрипт автоматически:
@@ -148,11 +148,21 @@ wget -qO /tmp/node-install.sh https://raw.githubusercontent.com/danielVNru/mtpro
 
 ```bash
 cd /opt/mtproto-node
-git pull origin master
-docker compose up -d --build
+bash update.sh
 ```
 
-Скрипт `update.sh` автоматически остановит ноду, обновит код, пересоберёт контейнер и восстановит все запущенные прокси.
+Скрипт `update.sh` переключает `origin` на `GrabovskyAlexey/mtproto-node`, обновляет код и загружает `ghcr.io/grabovskyalexey/mtproto-node:latest`. Если загрузка недоступна, образ собирается локально. Работающая нода заменяется после загрузки образа; `.env`, токен и каталог `data/` сохраняются. Восстанавливаются только прокси, работавшие перед обновлением. Остановленные и приостановленные прокси не запускаются.
+
+Для первого перехода со старого репозитория запустите новый скрипт непосредственно с GitHub после публикации кода и образа:
+
+```bash
+cd /opt/mtproto-node
+curl -fsSL https://raw.githubusercontent.com/GrabovskyAlexey/mtproto-node/master/update.sh | sudo bash
+```
+
+При обновлении из панели скрипт запускает отдельный контейнер `mtproto-node-updater`, который продолжает работу после замены сервис-ноды. Ответ API подтверждает запуск обновления; прогресс можно посмотреть через `docker logs -f mtproto-node-updater`.
+
+GitHub Actions публикует образ автоматически после push в `master` или `dev`, либо ручного запуска workflow. Пакет GHCR должен быть публичным для скачивания без авторизации.
 
 ## Структура контейнеров
 
@@ -193,6 +203,19 @@ docker compose up -d --build
 | `GET` | `/api/blacklist` | Получить чёрный список IP |
 | `PUT` | `/api/blacklist` | Обновить чёрный список IP |
 
+### Проверка VLESS
+
+Ответы `GET /api/proxies`, `GET /api/proxies/:id` и `GET /api/proxies/:id/stats` содержат `vpnStatus`: `{ state, checkedAt, latencyMs? }`. Возможные состояния: `disabled` (VPN не настроен), `connected` (HTTPS-проверка прошла), `disconnected` (проверка не прошла), `stopped` (Xray остановлен или на паузе), `unknown` (не удалось определить состояние).
+
+Проверка обращается к `https://www.gstatic.com/generate_204` через SOCKS5 соответствующего Xray, проверяет TLS-сертификат и ожидает HTTP 204. Таймауты инспекции Docker и запроса — по 5 секунд. Результат кешируется на 30 секунд; перезапуск или пересоздание контейнера сбрасывает кеш. Ошибка контрольного ресурса также приводит к `disconnected`; эта проверка не проверяет отдельно доступность Telegram.
+
+Тесты проверки соединения можно выполнить на Node.js 22.18+:
+
+```bash
+node tests/vpn-status.test.mjs
+node tests/socks-probe.test.mjs
+```
+
 ### Создание прокси
 
 ```bash
@@ -223,4 +246,4 @@ curl -X POST http://NODE_IP:8443/api/proxies \
 
 ## Связанный проект
 
-Панель управления: [mtproto-panel](https://github.com/danielVNru/mtproto-panel)
+Панель управления: [mtproto-panel](https://github.com/GrabovskyAlexey/mtproto-panel)

@@ -6,7 +6,7 @@ CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-REPO_URL="https://github.com/danielVNru/mtproto-node.git"
+REPO_URL="https://github.com/GrabovskyAlexey/mtproto-node.git"
 INSTALL_DIR="/opt/mtproto-node"
 
 echo -e "${CYAN}========================================${NC}"
@@ -101,8 +101,9 @@ fi
 if [ -d "$INSTALL_DIR/.git" ]; then
     echo -e "${CYAN}Обновление из репозитория...${NC}"
     cd "$INSTALL_DIR"
-    git fetch origin master
-    git reset --hard origin/master
+    git remote set-url origin "$REPO_URL" || exit 1
+    git fetch origin master || exit 1
+    git reset --hard origin/master || exit 1
 else
     echo -e "${CYAN}Скачивание последней версии...${NC}"
     rm -rf "$INSTALL_DIR"
@@ -160,7 +161,7 @@ export COMPOSE_PROJECT_NAME=mtproto-node
 docker network create mtproto-net 2>/dev/null || true
 
 echo -e "  Загрузка образа из GHCR..."
-if docker compose pull 2>/dev/null; then
+if docker compose pull; then
     echo -e "  ${GREEN}Образ загружен из GHCR${NC}"
 else
     echo -e "${YELLOW}  Не удалось загрузить образ, собираем локально (может занять несколько минут)...${NC}"
@@ -170,7 +171,7 @@ else
     fi
 fi
 
-if ! docker compose up -d; then
+if ! docker compose up -d --no-build --pull never; then
     echo -e "${RED}Ошибка при запуске контейнеров.${NC}"
     exit 1
 fi
