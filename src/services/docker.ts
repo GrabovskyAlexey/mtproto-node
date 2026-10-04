@@ -24,8 +24,6 @@ WORKDIR /opt/telemt
 
 USER telemt
 
-ENV RUST_LOG=info
-
 CMD ["/usr/local/bin/telemt", "/etc/telemt/config.toml"]
 `;
 
